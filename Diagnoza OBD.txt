@@ -1,0 +1,107 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+
+t = np.linspace(0, 60, 600)
+
+rpm = 800 + 1200 * np.abs(np.sin(0.1 * t))
+temp_apa = 20 + 80 * (1 - np.exp(-t / 20))
+temp_ulei = 30 + 90 * (1 - np.exp(-t / 25))
+maf = 4 + 6 * np.abs(np.sin(0.12 * t))
+pres_ulei = 4 + 0.5 * np.sin(0.1 * t)
+tps = 20 + 60 * np.abs(np.sin(0.08 * t))
+lambda_sensor = 1 + 0.05 * np.sin(0.2 * t)
+
+fault_time = random.randint(200, 450)
+faults = random.sample(
+    ["MAF", "TEMP_APA", "PRES_ULEI", "TPS", "LAMBDA"],
+    random.randint(1, 3)
+)
+
+errors = []
+
+if "MAF" in faults:
+    maf[fault_time:] += 15
+    errors.append(("P0100", "Defect senzor debit aer (MAF)"))
+
+if "TEMP_APA" in faults:
+    temp_apa[fault_time:] += 35
+    errors.append(("P0117", "Supraîncălzire lichid de răcire"))
+
+if "PRES_ULEI" in faults:
+    pres_ulei[fault_time:] -= 2.5
+    temp_ulei[fault_time:] += 20
+    errors.append(("P0520", "Presiune ulei scăzută"))
+
+if "TPS" in faults:
+    tps[fault_time:] += 40
+    errors.append(("P0120", "Defect senzor poziție clapetă"))
+
+if "LAMBDA" in faults:
+    lambda_sensor[fault_time:] += 0.4
+    errors.append(("P0130", "Defect sondă lambda"))
+
+print("CODURI OBD DETECTATE:")
+for code, desc in errors:
+    print(code, "-", desc)
+
+if any(e[0] == "P0100" for e in errors):
+    plt.figure()
+    plt.plot(t, maf)
+    plt.axhline(20, linestyle="--")
+    plt.axvline(t[fault_time], linestyle=":")
+    plt.title("Debit aer MAF")
+    plt.xlabel("Timp [s]")
+    plt.ylabel("g/s")
+    plt.grid()
+
+if any(e[0] == "P0117" for e in errors):
+    plt.figure()
+    plt.plot(t, temp_apa)
+    plt.axhline(110, linestyle="--")
+    plt.axvline(t[fault_time], linestyle=":")
+    plt.title("Temperatura lichid răcire")
+    plt.xlabel("Timp [s]")
+    plt.ylabel("°C")
+    plt.grid()
+
+if any(e[0] == "P0520" for e in errors):
+    plt.figure()
+    plt.plot(t, pres_ulei)
+    plt.axhline(1.5, linestyle="--")
+    plt.axvline(t[fault_time], linestyle=":")
+    plt.title("Presiune ulei")
+    plt.xlabel("Timp [s]")
+    plt.ylabel("bar")
+    plt.grid()
+
+    plt.figure()
+    plt.plot(t, temp_ulei)
+    plt.axvline(t[fault_time], linestyle=":")
+    plt.title("Temperatura ulei")
+    plt.xlabel("Timp [s]")
+    plt.ylabel("°C")
+    plt.grid()
+
+if any(e[0] == "P0120" for e in errors):
+    plt.figure()
+    plt.plot(t, tps)
+    plt.axhline(100, linestyle="--")
+    plt.axvline(t[fault_time], linestyle=":")
+    plt.title("Poziție clapetă accelerație")
+    plt.xlabel("Timp [s]")
+    plt.ylabel("%")
+    plt.grid()
+
+if any(e[0] == "P0130" for e in errors):
+    plt.figure()
+    plt.plot(t, lambda_sensor)
+    plt.axhline(1.15, linestyle="--")
+    plt.axhline(0.85, linestyle="--")
+    plt.axvline(t[fault_time], linestyle=":")
+    plt.title("Semnal sondă lambda")
+    plt.xlabel("Timp [s]")
+    plt.ylabel("λ")
+    plt.grid()
+
+plt.show()
